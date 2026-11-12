@@ -1,0 +1,16 @@
+[package]
+name = "deepcore_client"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+deepcore_shared = { workspace = true }
+bevy = { workspace = true, features = ["bevy_log", "bevy_winit", "bevy_window", "bevy_render", "bevy_core_pipeline", "bevy_pbr", "x11", "wayland"] }
+bevy_egui = { workspace = true }
+tracing = { workspace = true }
+anyhow = { workspace = true }
+
+[[bin]]
+name = "deepcore-client"
+path = "src/main.rs"

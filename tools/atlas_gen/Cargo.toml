@@ -1,0 +1,13 @@
+[package]
+name = "atlas_gen"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+deepcore_shared = { workspace = true }
+anyhow = { workspace = true }
+
+[[bin]]
+name = "atlas_gen"
+path = "src/main.rs"

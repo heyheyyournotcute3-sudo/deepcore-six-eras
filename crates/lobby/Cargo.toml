@@ -1,0 +1,12 @@
+[package]
+name = "deepcore_lobby"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+anyhow = { workspace = true }
+
+[[bin]]
+name = "deepcore-lobby"
+path = "src/main.rs"

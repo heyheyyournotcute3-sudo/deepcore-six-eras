@@ -179,7 +179,10 @@ mod tests {
         tick_vitals(&mut a, GearModifiers::NONE, 18.0, 0.0, 10.0, 1.0);
         tick_vitals(
             &mut b,
-            GearModifiers { radiation_mult: 0.2, ..GearModifiers::NONE },
+            GearModifiers {
+                radiation_mult: 0.2,
+                ..GearModifiers::NONE
+            },
             18.0,
             0.0,
             10.0,
@@ -191,8 +194,10 @@ mod tests {
 
     #[test]
     fn oxygen_runs_out_and_damages() {
-        let mut v = Vitals::default();
-        v.oxygen = 0.5;
+        let mut v = Vitals {
+            oxygen: 0.5,
+            ..Vitals::default()
+        };
         tick_vitals(&mut v, GearModifiers::NONE, 18.0, 5.0, 0.0, 1.0);
         assert!(v.health < 100.0);
     }
@@ -205,8 +210,10 @@ mod tests {
 
     #[test]
     fn decon_shower_clears_dose() {
-        let mut v = Vitals::default();
-        v.dose = 200.0;
+        let mut v = Vitals {
+            dose: 200.0,
+            ..Vitals::default()
+        };
         decontaminate(&mut v, 500.0);
         assert_eq!(v.dose, 0.0);
     }

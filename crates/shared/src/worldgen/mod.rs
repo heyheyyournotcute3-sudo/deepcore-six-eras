@@ -18,8 +18,10 @@ use crate::voxel::pos::{BlockPos, ChunkPos};
 use crate::voxel::{CHUNK_VOLUME, Chunk};
 use crate::{CHUNK_SIZE, SURFACE_Y, WORLD_HEIGHT, WORLD_SIZE};
 
-/// Height of the flat camp area around the spawn point.
+/// Radius of the flat camp area around the spawn point.
 pub const CAMP_RADIUS: i32 = 40;
+/// Depth below the surface that is guaranteed cave-free inside the camp.
+pub const CAMP_DEPTH: i32 = 12;
 
 /// World generator. Cheap to clone; owns no mutable state.
 pub struct WorldGen {
@@ -57,7 +59,9 @@ impl WorldGen {
     pub fn new(registry: &ContentRegistry, seed: u64) -> Self {
         let mut layers = Vec::new();
         for l in registry.layers() {
-            let Some(base) = registry.block(&l.base_block) else { continue };
+            let Some(base) = registry.block(&l.base_block) else {
+                continue;
+            };
             let top_y = SURFACE_Y - l.depth.0 as i32;
             let bottom_y = SURFACE_Y - l.depth.1 as i32;
             let mix = l
@@ -124,14 +128,9 @@ impl WorldGen {
         if !in_bounds(x, y, z) {
             return self.bedrock;
         }
-        // Bedrock floor, world walls and the ceiling are unbreakable.
-        if y == 0
-            || y >= WORLD_HEIGHT - 1
-            || x == 0
-            || z == 0
-            || x == WORLD_SIZE - 1
-            || z == WORLD_SIZE - 1
-        {
+        // Bedrock floor and world walls are unbreakable. The sky is open: the
+        // player is bounded horizontally and below, never above.
+        if y == 0 || x == 0 || z == 0 || x == WORLD_SIZE - 1 || z == WORLD_SIZE - 1 {
             return self.bedrock;
         }
         if y > SURFACE_Y {
@@ -146,8 +145,12 @@ impl WorldGen {
             return self.bedrock;
         };
 
+        // The camp is a flat, cave-free clearing so players always spawn on
+        // solid ground inside a safe base area.
+        let camp = in_camp(x, z) && y > SURFACE_Y - CAMP_DEPTH;
+
         // Caves carve out of solid rock below the topsoil.
-        if layer.bottom_y + 2 < y && self.is_cave(x, y, z, layer.cave_density) {
+        if !camp && layer.bottom_y + 2 < y && self.is_cave(x, y, z, layer.cave_density) {
             return self.air;
         }
 
@@ -180,10 +183,14 @@ impl WorldGen {
 
     fn is_cave(&self, x: i32, y: i32, z: i32, density: f32) -> bool {
         let scale = 0.035;
-        let n1 = self.cave_noise.get([x as f64 * scale, y as f64 * scale * 1.7, z as f64 * scale]);
-        let n2 = self
-            .cave_noise2
-            .get([x as f64 * scale * 1.3, y as f64 * scale, z as f64 * scale * 1.3]);
+        let n1 = self
+            .cave_noise
+            .get([x as f64 * scale, y as f64 * scale * 1.7, z as f64 * scale]);
+        let n2 = self.cave_noise2.get([
+            x as f64 * scale * 1.3,
+            y as f64 * scale,
+            z as f64 * scale * 1.3,
+        ]);
         let tunnel = n1.abs() < 0.055 * density as f64 && n2.abs() < 0.09;
         let cavern = n1 * n2 > 0.16 / density.max(0.1) as f64;
         tunnel || cavern
@@ -242,7 +249,9 @@ impl WorldGen {
 
     /// The layer that applies at a given depth, for hazard lookups.
     pub fn layer_at_depth(&self, y: i32) -> Option<usize> {
-        self.layers.iter().position(|l| y <= l.top_y && y > l.bottom_y)
+        self.layers
+            .iter()
+            .position(|l| y <= l.top_y && y > l.bottom_y)
     }
 
     /// Layer count.
@@ -294,4 +303,92 @@ pub fn layer_def_at(layers: &[LayerDef], y: i32) -> Option<&LayerDef> {
         .iter()
         .find(|l| depth as u32 >= l.depth.0 && depth as u32 <= l.depth.1)
         .or_else(|| layers.last())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::content::ContentRegistry;
+
+    fn registry() -> ContentRegistry {
+        ContentRegistry::load_dir(crate::data_dir()).expect("content loads")
+    }
+
+    #[test]
+    fn same_seed_generates_identical_chunks() {
+        let reg = registry();
+        let a = WorldGen::new(&reg, 12345);
+        let b = WorldGen::new(&reg, 12345);
+        let pos = ChunkPos::new(16, 15, 16);
+        let ca = a.generate_chunk(pos);
+        let cb = b.generate_chunk(pos);
+        for (p, block) in ca.iter_blocks() {
+            assert_eq!(cb.get_local(p[0], p[1], p[2]), block);
+        }
+    }
+
+    #[test]
+    fn different_seeds_generate_different_worlds() {
+        let reg = registry();
+        let a = WorldGen::new(&reg, 1);
+        let b = WorldGen::new(&reg, 2);
+        let pos = ChunkPos::new(20, 8, 20);
+        let ca = a.generate_chunk(pos);
+        let cb = b.generate_chunk(pos);
+        let mut diff = 0;
+        for (p, block) in ca.iter_blocks() {
+            if cb.get_local(p[0], p[1], p[2]) != block {
+                diff += 1;
+            }
+        }
+        assert!(diff > 0, "two seeds produced identical terrain");
+    }
+
+    #[test]
+    fn camp_is_flat_and_cave_free() {
+        let reg = registry();
+        let w = WorldGen::new(&reg, 999);
+        let spawn = spawn_pos();
+        let air = reg.air.0;
+        for dx in [-20, 0, 20] {
+            for dz in [-20, 0, 20] {
+                // The spawn cell itself is open air; the ground starts one
+                // block below it.
+                for dy in 1..=CAMP_DEPTH {
+                    let p = spawn.offset([dx, -dy, dz]);
+                    let chunk = w.generate_chunk(p.chunk());
+                    let [x, y, z] = p.local();
+                    let block = chunk.get_local(x, y, z);
+                    assert_ne!(block, air, "camp has a hole at {p}");
+                }
+            }
+        }
+        // Above the surface inside the camp is open air.
+        for dx in [-5, 0, 5] {
+            let p = spawn.offset([dx, 0, 0]);
+            let chunk = w.generate_chunk(p.chunk());
+            let [x, y, z] = p.local();
+            assert_eq!(chunk.get_local(x, y, z), air);
+        }
+    }
+
+    #[test]
+    fn layers_are_ordered_from_surface_to_bedrock() {
+        let reg = registry();
+        let w = WorldGen::new(&reg, 7);
+        assert_eq!(w.layer_count(), 6);
+        // A point just under the surface is topsoil, deep down is mantle.
+        assert_eq!(w.layer_at_depth(SURFACE_Y - 8), Some(0));
+        assert_eq!(w.layer_at_depth(4), Some(5));
+    }
+
+    #[test]
+    fn bedrock_bounds_the_world() {
+        let reg = registry();
+        let w = WorldGen::new(&reg, 3);
+        let chunk = w.generate_chunk(ChunkPos::new(0, 0, 0));
+        let bedrock = reg.bedrock.0;
+        assert_eq!(chunk.get_local(0, 5, 5), bedrock, "west wall");
+        assert_eq!(chunk.get_local(5, 0, 5), bedrock, "floor");
+    }
 }

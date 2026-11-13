@@ -13,9 +13,21 @@ fn content_loads_and_validates() {
     let reg = ContentRegistry::load_dir(data_dir()).expect("content must load and validate");
     assert!(reg.blocks().len() >= 90, "blocks: {}", reg.blocks().len());
     assert!(reg.items().len() >= 180, "items: {}", reg.items().len());
-    assert!(reg.recipes().len() >= 100, "recipes: {}", reg.recipes().len());
-    assert!(reg.machines().len() >= 38, "machines: {}", reg.machines().len());
-    assert!(reg.tech_nodes().len() >= 25, "tech: {}", reg.tech_nodes().len());
+    assert!(
+        reg.recipes().len() >= 100,
+        "recipes: {}",
+        reg.recipes().len()
+    );
+    assert!(
+        reg.machines().len() >= 38,
+        "machines: {}",
+        reg.machines().len()
+    );
+    assert!(
+        reg.tech_nodes().len() >= 25,
+        "tech: {}",
+        reg.tech_nodes().len()
+    );
     assert_eq!(reg.layers().len(), 6);
 }
 
@@ -23,16 +35,35 @@ fn content_loads_and_validates() {
 fn required_blocks_and_items_exist() {
     let reg = ContentRegistry::load_dir(data_dir()).unwrap();
     for id in [
-        "air", "bedrock", "grass", "dirt", "stone", "granite", "basalt", "gneiss",
-        "mantle_rock", "coal_seam", "malachite", "hematite", "galena", "pitchblende",
-        "dense_pitchblende", "water",
+        "air",
+        "bedrock",
+        "grass",
+        "dirt",
+        "stone",
+        "granite",
+        "basalt",
+        "gneiss",
+        "mantle_rock",
+        "coal_seam",
+        "malachite",
+        "hematite",
+        "galena",
+        "pitchblende",
+        "dense_pitchblende",
+        "water",
     ] {
         assert!(reg.block(id).is_some(), "missing block {id}");
     }
     for id in [
-        "steel_pickaxe", "hardened_steel_pickaxe", "steam_drill",
-        "tungsten_carbide_drill", "nuclear_drill", "steel_ingot", "raw_iron",
-        "yellowcake", "compact_core_cell",
+        "steel_pickaxe",
+        "hardened_steel_pickaxe",
+        "steam_drill",
+        "tungsten_carbide_drill",
+        "nuclear_drill",
+        "steel_ingot",
+        "raw_iron",
+        "yellowcake",
+        "compact_core_cell",
     ] {
         assert!(reg.item(id).is_some(), "missing item {id}");
     }
@@ -91,9 +122,16 @@ fn nuclear_drill_mines_a_three_by_three_face() {
 fn nuclear_chain_recipes_exist() {
     let reg = ContentRegistry::load_dir(data_dir()).unwrap();
     for id in [
-        "crusher_uranium", "leach_uranium", "precipitate_yellowcake", "convert_uf6",
-        "centrifuge_enrich", "fabricate_fuel_rod", "fabricate_core_cell",
-        "shop_nuclear_drill", "pool_spent_fuel", "shop_control_rod",
+        "crusher_uranium",
+        "leach_uranium",
+        "precipitate_yellowcake",
+        "convert_uf6",
+        "centrifuge_enrich",
+        "fabricate_fuel_rod",
+        "fabricate_core_cell",
+        "shop_nuclear_drill",
+        "pool_spent_fuel",
+        "shop_control_rod",
     ] {
         assert!(reg.recipe(id).is_some(), "missing nuclear recipe {id}");
     }

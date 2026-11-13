@@ -53,7 +53,11 @@ impl BlockPos {
 
     /// Center of the block in world space.
     pub fn center(self) -> Vec3 {
-        Vec3::new(self.x as f32 + 0.5, self.y as f32 + 0.5, self.z as f32 + 0.5)
+        Vec3::new(
+            self.x as f32 + 0.5,
+            self.y as f32 + 0.5,
+            self.z as f32 + 0.5,
+        )
     }
 
     /// Offset by a delta.
@@ -81,7 +85,9 @@ impl std::fmt::Display for BlockPos {
 }
 
 /// A chunk coordinate.
-#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, Default, PartialOrd, Ord, Serialize, Deserialize)]
+#[derive(
+    Clone, Copy, PartialEq, Eq, Hash, Debug, Default, PartialOrd, Ord, Serialize, Deserialize,
+)]
 pub struct ChunkPos {
     /// Chunk X.
     pub x: i32,
@@ -104,7 +110,11 @@ impl ChunkPos {
 
     /// Origin block of this chunk (minimum corner).
     pub const fn origin(self) -> BlockPos {
-        BlockPos::new(self.x * CHUNK_SIZE, self.y * CHUNK_SIZE, self.z * CHUNK_SIZE)
+        BlockPos::new(
+            self.x * CHUNK_SIZE,
+            self.y * CHUNK_SIZE,
+            self.z * CHUNK_SIZE,
+        )
     }
 
     /// Neighbouring chunk in the given direction.
@@ -118,7 +128,10 @@ impl ChunkPos {
 
     /// Chebyshev-ish distance used for interest management ordering.
     pub fn distance_to(self, other: Self) -> i32 {
-        (self.x - other.x).abs().max((self.y - other.y).abs()).max((self.z - other.z).abs())
+        (self.x - other.x)
+            .abs()
+            .max((self.y - other.y).abs())
+            .max((self.z - other.z).abs())
     }
 }
 

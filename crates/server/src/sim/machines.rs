@@ -3,7 +3,7 @@
 
 use bevy::prelude::*;
 use deepcore_shared::content::{MachineEnergy, RecipeId};
-use deepcore_shared::crafting::{tick_machine, MachineState};
+use deepcore_shared::crafting::{MachineState, tick_machine};
 use deepcore_shared::power::{Network, NetworkStats};
 
 use crate::sim::resources::{Grid, Machine, Player, TechTree, WorldRes};
@@ -70,30 +70,42 @@ fn publish_producer_output(
     reg: &deepcore_shared::content::ContentRegistry,
     kind: deepcore_shared::content::MachineId,
 ) {
-    let Some(def) = reg.machine_def(kind) else { return };
+    let Some(def) = reg.machine_def(kind) else {
+        return;
+    };
     let output = match &def.energy {
         MachineEnergy::Fuel { .. } => 60.0,
         MachineEnergy::Steam { per_sec } => per_sec * 25.0,
         _ => def.reactor.map(|r| r.output_kw).unwrap_or(0.0),
     };
     if let Some(&net) = grid.grid.membership.get(&node)
-        && let Some(n) = grid.grid.networks.get_mut(net) {
-            if let Some(p) = n.producers.iter_mut().find(|p| p.node == node) {
-                p.output = output;
-            } else {
-                n.producers.push(deepcore_shared::power::Producer { node, output });
-            }
+        && let Some(n) = grid.grid.networks.get_mut(net)
+    {
+        if let Some(p) = n.producers.iter_mut().find(|p| p.node == node) {
+            p.output = output;
+        } else {
+            n.producers
+                .push(deepcore_shared::power::Producer { node, output });
         }
+    }
 }
 
 /// Creates a fresh machine state for a kind.
-pub fn new_machine_state(kind: deepcore_shared::content::MachineId, def: &deepcore_shared::content::MachineDef) -> MachineState {
+pub fn new_machine_state(
+    kind: deepcore_shared::content::MachineId,
+    def: &deepcore_shared::content::MachineDef,
+) -> MachineState {
     MachineState::with_kind(kind, def)
 }
 
 /// Registers a machine on the grid: a new single-machine network, or the
 /// network of an adjacent machine.
-pub fn attach_to_grid(grid: &mut Grid, node: deepcore_shared::power::NodeId, neighbour: Option<deepcore_shared::power::NodeId>, demand: f32) {
+pub fn attach_to_grid(
+    grid: &mut Grid,
+    node: deepcore_shared::power::NodeId,
+    neighbour: Option<deepcore_shared::power::NodeId>,
+    demand: f32,
+) {
     let net_index = neighbour
         .and_then(|n| grid.grid.membership.get(&n).copied())
         .unwrap_or_else(|| {

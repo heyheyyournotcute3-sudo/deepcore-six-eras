@@ -97,12 +97,14 @@ impl Inventory {
                 break;
             }
             if let Some(stack) = slot
-                && stack.item == item && stack.count < max_stack {
-                    let room = max_stack - stack.count;
-                    let moved = room.min(left);
-                    stack.count += moved;
-                    left -= moved;
-                }
+                && stack.item == item
+                && stack.count < max_stack
+            {
+                let room = max_stack - stack.count;
+                let moved = room.min(left);
+                stack.count += moved;
+                left -= moved;
+            }
         }
         // Pass 2: fill empty slots.
         for slot in self.slots.iter_mut() {
@@ -127,14 +129,15 @@ impl Inventory {
                 break;
             }
             if let Some(stack) = slot
-                && stack.item == item {
-                    let taken = stack.count.min(left);
-                    stack.count -= taken;
-                    left -= taken;
-                    if stack.count == 0 {
-                        *slot = None;
-                    }
+                && stack.item == item
+            {
+                let taken = stack.count.min(left);
+                stack.count -= taken;
+                left -= taken;
+                if stack.count == 0 {
+                    *slot = None;
                 }
+            }
         }
         count - left
     }
@@ -222,7 +225,11 @@ impl Inventory {
     /// Moves a whole stack into the first matching/empty slot of the other
     /// range (quick-move). `to_hotbar` selects the destination range.
     pub fn quick_move(&mut self, slot: Slot, to_hotbar: bool, max_stack: u32) -> bool {
-        let range = if to_hotbar { 0..HOTBAR_SLOTS } else { HOTBAR_SLOTS..INVENTORY_SLOTS };
+        let range = if to_hotbar {
+            0..HOTBAR_SLOTS
+        } else {
+            HOTBAR_SLOTS..INVENTORY_SLOTS
+        };
         let Some(stack) = self.get(slot) else {
             return false;
         };
@@ -233,14 +240,16 @@ impl Inventory {
                 break;
             }
             if let Some(d) = self.get(dst)
-                && d.item == stack.item && d.count < max_stack {
-                    let room = max_stack - d.count;
-                    let m = room.min(remaining);
-                    if let Some(dd) = self.slots[dst].as_mut() {
-                        dd.count += m;
-                    }
-                    remaining -= m;
+                && d.item == stack.item
+                && d.count < max_stack
+            {
+                let room = max_stack - d.count;
+                let m = room.min(remaining);
+                if let Some(dd) = self.slots[dst].as_mut() {
+                    dd.count += m;
                 }
+                remaining -= m;
+            }
         }
         for dst in range {
             if remaining == 0 {
@@ -271,7 +280,10 @@ impl Inventory {
 
 /// Convenience for building a bill of materials from string ids.
 pub fn bill(reg: &ContentRegistry, items: &[(&str, u32)]) -> Option<Vec<(ItemId, u32)>> {
-    items.iter().map(|(id, n)| reg.item(id).map(|i| (i, *n))).collect()
+    items
+        .iter()
+        .map(|(id, n)| reg.item(id).map(|i| (i, *n)))
+        .collect()
 }
 
 #[cfg(test)]

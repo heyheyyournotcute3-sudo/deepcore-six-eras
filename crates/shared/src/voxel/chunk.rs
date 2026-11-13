@@ -171,7 +171,8 @@ impl Chunk {
         if bytes.len() < 17 {
             return None;
         }
-        let rd = |o: usize| i32::from_le_bytes([bytes[o], bytes[o + 1], bytes[o + 2], bytes[o + 3]]);
+        let rd =
+            |o: usize| i32::from_le_bytes([bytes[o], bytes[o + 1], bytes[o + 2], bytes[o + 3]]);
         let pos = ChunkPos::new(rd(0), rd(4), rd(8));
         let wide = bytes[12] != 0;
         let palette_len = u32::from_le_bytes([bytes[13], bytes[14], bytes[15], bytes[16]]) as usize;
@@ -204,7 +205,10 @@ impl Chunk {
             let z = (i / CHUNK_SIZE as usize) % CHUNK_SIZE as usize;
             let y = i / (CHUNK_SIZE as usize * CHUNK_SIZE as usize);
             let idx = self.get_raw(i);
-            ([x, y, z], self.palette.get(idx as usize).copied().unwrap_or(0))
+            (
+                [x, y, z],
+                self.palette.get(idx as usize).copied().unwrap_or(0),
+            )
         })
     }
 }

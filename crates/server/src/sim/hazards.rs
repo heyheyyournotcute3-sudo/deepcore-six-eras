@@ -5,9 +5,7 @@
 
 use bevy::prelude::*;
 use deepcore_shared::content::{HazardDef, ItemCategory};
-use deepcore_shared::hazards::{
-    tick_vitals, GearModifiers, Vitals,
-};
+use deepcore_shared::hazards::{GearModifiers, Vitals, tick_vitals};
 use deepcore_shared::voxel::BlockPos;
 use deepcore_shared::worldgen::{depth_below_surface, layer_def_at};
 
@@ -21,7 +19,9 @@ pub fn gear_of(world: &WorldRes, player: &Player) -> GearModifiers {
     let reg = world.0.registry();
     let mut gear = GearModifiers::NONE;
     for stack in player.inventory.slots().iter().flatten() {
-        let Some(def) = reg.item_def(stack.item) else { continue };
+        let Some(def) = reg.item_def(stack.item) else {
+            continue;
+        };
         if def.category != ItemCategory::Gear {
             continue;
         }
@@ -49,7 +49,9 @@ pub fn radiation_at(world: &mut WorldRes, pos: BlockPos) -> f32 {
                     continue;
                 }
                 let block = world.0.block(p);
-                let Some(def) = world.0.block_def(block) else { continue };
+                let Some(def) = world.0.block_def(block) else {
+                    continue;
+                };
                 if let Some(rad) = def.radiation {
                     let dist = ((x * x + y * y + z * z) as f32).sqrt();
                     dose += deepcore_shared::hazards::radiation_falloff(

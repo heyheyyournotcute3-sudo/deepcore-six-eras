@@ -84,7 +84,10 @@ pub fn predicted_break_seconds(reg: &ContentRegistry, block: BlockId, held: Opti
     let Some(def) = reg.block_def(block) else {
         return 0.0;
     };
-    let speed = held.and_then(|i| tool_of(reg, i)).map(|t| t.speed).unwrap_or(0.5);
+    let speed = held
+        .and_then(|i| tool_of(reg, i))
+        .map(|t| t.speed)
+        .unwrap_or(0.5);
     break_time(def.hardness, speed, 1.0)
 }
 

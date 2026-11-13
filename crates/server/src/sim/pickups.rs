@@ -33,7 +33,12 @@ pub struct Pickups {
 pub fn spawn_pickup(world: &WorldRes, pos: BlockPos, item: ItemId, count: u32) {
     let _ = world;
     PICKUP_QUEUE.with(|q| {
-        q.borrow_mut().push(Pickup { pos, item, count, delay: 15 });
+        q.borrow_mut().push(Pickup {
+            pos,
+            item,
+            count,
+            delay: 15,
+        });
     });
 }
 

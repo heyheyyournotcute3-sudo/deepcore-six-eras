@@ -80,17 +80,21 @@ pub fn start_server(
     channels: &RepliconChannels,
     cfg: &ServerConfig,
 ) -> anyhow::Result<()> {
+    use bevy_replicon_renet::netcode::{
+        NetcodeServerTransport, ServerAuthentication, ServerConfig as NetcodeConfig,
+    };
     use bevy_replicon_renet::renet::ConnectionConfig;
     use bevy_replicon_renet::{RenetChannelsExt, RenetServer};
-    use bevy_replicon_renet::netcode::{NetcodeServerTransport, ServerAuthentication, ServerConfig as NetcodeConfig};
     use std::net::{Ipv4Addr, UdpSocket};
     use std::time::SystemTime;
 
-    let server = RenetServer(bevy_replicon_renet::renet::RenetServer::new(ConnectionConfig {
-        server_channels_config: channels.server_configs(),
-        client_channels_config: channels.client_configs(),
-        ..Default::default()
-    }));
+    let server = RenetServer(bevy_replicon_renet::renet::RenetServer::new(
+        ConnectionConfig {
+            server_channels_config: channels.server_configs(),
+            client_channels_config: channels.client_configs(),
+            ..Default::default()
+        },
+    ));
 
     let current_time = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH)?;
     let socket = UdpSocket::bind((Ipv4Addr::UNSPECIFIED, cfg.port))?;
@@ -181,7 +185,9 @@ pub fn stream_chunks(
             for dy in -VIEW_CHUNKS_V..=VIEW_CHUNKS_V {
                 for dz in -VIEW_CHUNKS_H..=VIEW_CHUNKS_H {
                     let pos = center.offset([dx, dy, dz]);
-                    if pos.y < 0 || pos.y * deepcore_shared::CHUNK_SIZE >= deepcore_shared::WORLD_HEIGHT {
+                    if pos.y < 0
+                        || pos.y * deepcore_shared::CHUNK_SIZE >= deepcore_shared::WORLD_HEIGHT
+                    {
                         continue;
                     }
                     wanted.push(pos);
@@ -198,7 +204,11 @@ pub fn stream_chunks(
             }
             let chunk = world.0.chunk(*pos);
             if let Some(data) = encode_chunk(chunk) {
-                queue.push(ChunkPayload { pos: *pos, data, unload: false });
+                queue.push(ChunkPayload {
+                    pos: *pos,
+                    data,
+                    unload: false,
+                });
                 sent += 1;
             }
             if sent >= 8 {
@@ -210,7 +220,11 @@ pub fn stream_chunks(
         let wanted_set: std::collections::HashSet<ChunkPos> = wanted.into_iter().collect();
         let to_unload: Vec<ChunkPos> = loaded.difference(&wanted_set).copied().collect();
         for pos in to_unload {
-            queue.push(ChunkPayload { pos, data: Vec::new(), unload: true });
+            queue.push(ChunkPayload {
+                pos,
+                data: Vec::new(),
+                unload: true,
+            });
         }
     }
 
@@ -250,7 +264,11 @@ pub fn broadcast_block_changes(
 
 /// Replicates the authoritative player position each tick.
 pub fn sync_replicated_players(
-    mut players: Query<(&Player, &deepcore_shared::movement::PlayerBody, &mut PlayerReplicated)>,
+    mut players: Query<(
+        &Player,
+        &deepcore_shared::movement::PlayerBody,
+        &mut PlayerReplicated,
+    )>,
 ) {
     for (player, body, mut rep) in players.iter_mut() {
         rep.pos = body.pos;

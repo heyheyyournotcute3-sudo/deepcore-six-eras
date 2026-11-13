@@ -108,10 +108,7 @@ impl MachineState {
     }
 
     /// Creates a machine with the given id and slot counts.
-    pub fn with_kind(
-        kind: crate::content::MachineId,
-        def: &MachineDef,
-    ) -> Self {
+    pub fn with_kind(kind: crate::content::MachineId, def: &MachineDef) -> Self {
         let mut s = Self::new(def);
         s.kind = kind;
         s
@@ -119,7 +116,12 @@ impl MachineState {
 
     /// Total items of a type across the input slots.
     pub fn input_count(&self, item: ItemId) -> u32 {
-        self.inputs.iter().flatten().filter(|s| s.item == item).map(|s| s.count).sum()
+        self.inputs
+            .iter()
+            .flatten()
+            .filter(|s| s.item == item)
+            .map(|s| s.count)
+            .sum()
     }
 
     /// Free room in the output slots for a given item and amount.
@@ -169,14 +171,15 @@ impl MachineState {
                     break;
                 }
                 if let Some(s) = slot
-                    && s.item == *item {
-                        let t = s.count.min(left);
-                        s.count -= t;
-                        left -= t;
-                        if s.count == 0 {
-                            *slot = None;
-                        }
+                    && s.item == *item
+                {
+                    let t = s.count.min(left);
+                    s.count -= t;
+                    left -= t;
+                    if s.count == 0 {
+                        *slot = None;
                     }
+                }
             }
         }
     }
@@ -201,10 +204,11 @@ pub fn match_recipe(
 ) -> Option<RecipeId> {
     if let Some(r) = state.recipe {
         let def = reg.recipe_def(r)?;
-        let ok = def
-            .inputs
-            .iter()
-            .all(|(id, n)| reg.item(id).map(|i| state.input_count(i) >= *n).unwrap_or(false));
+        let ok = def.inputs.iter().all(|(id, n)| {
+            reg.item(id)
+                .map(|i| state.input_count(i) >= *n)
+                .unwrap_or(false)
+        });
         if ok && unlocked(r) {
             return Some(r);
         }
@@ -216,12 +220,15 @@ pub fn match_recipe(
         let Some(def) = reg.recipe_def(*r) else {
             return false;
         };
-        let has_inputs = def
-            .inputs
-            .iter()
-            .all(|(id, n)| reg.item(id).map(|i| state.input_count(i) >= *n).unwrap_or(false));
+        let has_inputs = def.inputs.iter().all(|(id, n)| {
+            reg.item(id)
+                .map(|i| state.input_count(i) >= *n)
+                .unwrap_or(false)
+        });
         let has_room = def.outputs.iter().all(|(id, n)| {
-            reg.item(id).map(|i| state.output_room(reg, i, *n) >= *n).unwrap_or(false)
+            reg.item(id)
+                .map(|i| state.output_room(reg, i, *n) >= *n)
+                .unwrap_or(false)
         });
         has_inputs && has_room
     })
@@ -256,7 +263,9 @@ pub fn tick_machine(
                         slot.count -= 1;
                         state.burn_remaining = FUEL_BURN_SECONDS;
                         result.consumed_fuel = true;
-                    } else if let Some(inv_fuel) = state.inputs.iter().flatten().find(|s| s.item == fuel_item) {
+                    } else if let Some(inv_fuel) =
+                        state.inputs.iter().flatten().find(|s| s.item == fuel_item)
+                    {
                         let _ = inv_fuel;
                     }
                 }
@@ -362,10 +371,16 @@ mod tests {
 
     #[test]
     fn upgrade_multipliers() {
-        let u = Upgrades { speed: 2, efficiency: 0 };
+        let u = Upgrades {
+            speed: 2,
+            efficiency: 0,
+        };
         assert!((u.speed_mult() - 2.0).abs() < 1e-6);
         assert!((u.power_mult() - 2.6).abs() < 1e-6);
-        let e = Upgrades { speed: 0, efficiency: 2 };
+        let e = Upgrades {
+            speed: 0,
+            efficiency: 2,
+        };
         assert!((e.power_mult() - 0.4).abs() < 1e-6);
     }
 }

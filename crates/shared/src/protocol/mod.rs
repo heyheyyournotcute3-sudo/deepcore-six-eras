@@ -286,7 +286,9 @@ pub struct PlayerReplicated {
 }
 
 /// Authoritative movement correction for the owning client.
-#[derive(bevy::prelude::Component, bevy::prelude::Message, Clone, Copy, Debug, Serialize, Deserialize)]
+#[derive(
+    bevy::prelude::Component, bevy::prelude::Message, Clone, Copy, Debug, Serialize, Deserialize,
+)]
 pub struct MovementCorrection {
     /// Last processed input sequence.
     pub seq: u32,
@@ -299,7 +301,9 @@ pub struct MovementCorrection {
 }
 
 /// Vitals snapshot for the owner.
-#[derive(bevy::prelude::Component, bevy::prelude::Message, Clone, Copy, Debug, Serialize, Deserialize)]
+#[derive(
+    bevy::prelude::Component, bevy::prelude::Message, Clone, Copy, Debug, Serialize, Deserialize,
+)]
 pub struct VitalsMsg(pub Vitals);
 
 /// Chat line broadcast to everyone.

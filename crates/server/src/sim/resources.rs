@@ -79,7 +79,11 @@ pub struct TechTree {
 
 impl TechTree {
     /// True if a recipe is available to the team.
-    pub fn recipe_unlocked(&self, reg: &deepcore_shared::content::ContentRegistry, r: RecipeId) -> bool {
+    pub fn recipe_unlocked(
+        &self,
+        reg: &deepcore_shared::content::ContentRegistry,
+        r: RecipeId,
+    ) -> bool {
         let Some(def) = reg.recipe_def(r) else {
             return false;
         };
@@ -236,7 +240,10 @@ mod tests {
 
     #[test]
     fn config_ignores_unknown_flags() {
-        let args: Vec<String> = "--nope 1 --port 1234".split_whitespace().map(String::from).collect();
+        let args: Vec<String> = "--nope 1 --port 1234"
+            .split_whitespace()
+            .map(String::from)
+            .collect();
         let cfg = ServerConfig::from_args(&args);
         assert_eq!(cfg.port, 1234);
     }

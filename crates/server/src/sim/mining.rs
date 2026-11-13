@@ -3,20 +3,28 @@
 //! reach of the machine being opened.
 
 use bevy::prelude::*;
-use deepcore_shared::blocks::{apply_drops, area_blocks, can_place, plan_mine, MineRefusal, PlaceRefusal};
+use deepcore_shared::blocks::{
+    MineRefusal, PlaceRefusal, apply_drops, area_blocks, can_place, plan_mine,
+};
 use deepcore_shared::content::BlockId;
-use deepcore_shared::movement::{overlaps_solid, PlayerBody, PLAYER_HALF_HEIGHT, PLAYER_HALF_WIDTH};
+use deepcore_shared::inventory::Inventory;
+use deepcore_shared::movement::{
+    PLAYER_HALF_HEIGHT, PLAYER_HALF_WIDTH, PlayerBody, overlaps_solid,
+};
 use deepcore_shared::protocol::{
     BlockChange, BlockChangeBatch, Interact, MineRefusalMsg, PlaceBlock, StartMining, StopMining,
 };
 use deepcore_shared::voxel::{BlockPos, Face};
-use deepcore_shared::inventory::Inventory;
 
 use crate::sim::resources::{MiningState, Player, WorldRes};
 
 /// Eye position of a player body.
 pub fn eye_pos(body: &PlayerBody) -> [f32; 3] {
-    [body.pos[0], body.pos[1] + PLAYER_HALF_HEIGHT - 0.25, body.pos[2]]
+    [
+        body.pos[0],
+        body.pos[1] + PLAYER_HALF_HEIGHT - 0.25,
+        body.pos[2],
+    ]
 }
 
 /// Direction vector from yaw and pitch.
@@ -109,7 +117,10 @@ pub fn finish_mining(
                 crate::sim::pickups::spawn_pickup(world, *pos, item, count);
             }
         }
-        changes.push(BlockChange { pos: *pos, block: air });
+        changes.push(BlockChange {
+            pos: *pos,
+            block: air,
+        });
     }
 }
 
@@ -145,10 +156,19 @@ pub fn try_place(
 
     let current = world.0.block(msg.pos);
     let player_box_blocked = block_intersects_player(body, msg.pos);
-    let block = can_place(world.0.registry(), stack.item, msg.pos, current, player_box_blocked)?;
+    let block = can_place(
+        world.0.registry(),
+        stack.item,
+        msg.pos,
+        current,
+        player_box_blocked,
+    )?;
     world.0.set_block(msg.pos, block);
     player.inventory.take_from_slot(slot, 1);
-    Ok(BlockChange { pos: msg.pos, block })
+    Ok(BlockChange {
+        pos: msg.pos,
+        block,
+    })
 }
 
 /// True if placing a block at `pos` would overlap the player's body.
@@ -166,7 +186,11 @@ pub fn block_intersects_player(body: &PlayerBody, pos: BlockPos) -> bool {
     let bx = pos.x as f32;
     let by = pos.y as f32;
     let bz = pos.z as f32;
-    min[0] < bx + 1.0 && max[0] > bx && min[1] < by + 1.0 && max[1] > by && min[2] < bz + 1.0
+    min[0] < bx + 1.0
+        && max[0] > bx
+        && min[1] < by + 1.0
+        && max[1] > by
+        && min[2] < bz + 1.0
         && max[2] > bz
 }
 

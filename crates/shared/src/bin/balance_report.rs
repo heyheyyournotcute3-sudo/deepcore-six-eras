@@ -43,10 +43,11 @@ fn main() {
     }
     for r in reg.recipes() {
         if let Some(t) = &r.tech {
-            recipe_tech.entry(deepcore_shared::content::RecipeId(
-                reg.recipes().iter().position(|x| x.id == r.id).unwrap_or(0) as u16,
-            ))
-            .or_insert_with(|| t.clone());
+            recipe_tech
+                .entry(deepcore_shared::content::RecipeId(
+                    reg.recipes().iter().position(|x| x.id == r.id).unwrap_or(0) as u16,
+                ))
+                .or_insert_with(|| t.clone());
         }
     }
 
@@ -131,7 +132,10 @@ fn main() {
             }
         }
         let sum: u64 = total.values().sum();
-        println!("\n--- Era {era} ---  ({} nodes, {sum} raw items)", nodes.len());
+        println!(
+            "\n--- Era {era} ---  ({} nodes, {sum} raw items)",
+            nodes.len()
+        );
         for (k, v) in &total {
             println!("  {k:<24} {v:>6}");
         }

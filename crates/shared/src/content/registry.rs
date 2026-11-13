@@ -12,23 +12,83 @@ use thiserror::Error;
 use super::defs::*;
 
 /// Numeric block id.
-#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, Default, PartialOrd, Ord, serde::Serialize, serde::Deserialize)]
+#[derive(
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    Debug,
+    Default,
+    PartialOrd,
+    Ord,
+    serde::Serialize,
+    serde::Deserialize,
+)]
 pub struct BlockId(pub u16);
 
 /// Numeric item id.
-#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, Default, PartialOrd, Ord, serde::Serialize, serde::Deserialize)]
+#[derive(
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    Debug,
+    Default,
+    PartialOrd,
+    Ord,
+    serde::Serialize,
+    serde::Deserialize,
+)]
 pub struct ItemId(pub u16);
 
 /// Numeric recipe id.
-#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, Default, PartialOrd, Ord, serde::Serialize, serde::Deserialize)]
+#[derive(
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    Debug,
+    Default,
+    PartialOrd,
+    Ord,
+    serde::Serialize,
+    serde::Deserialize,
+)]
 pub struct RecipeId(pub u16);
 
 /// Numeric tech node id.
-#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, Default, PartialOrd, Ord, serde::Serialize, serde::Deserialize)]
+#[derive(
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    Debug,
+    Default,
+    PartialOrd,
+    Ord,
+    serde::Serialize,
+    serde::Deserialize,
+)]
 pub struct TechId(pub u16);
 
 /// Numeric machine id.
-#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug, Default, PartialOrd, Ord, serde::Serialize, serde::Deserialize)]
+#[derive(
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    Debug,
+    Default,
+    PartialOrd,
+    Ord,
+    serde::Serialize,
+    serde::Deserialize,
+)]
 pub struct MachineId(pub u16);
 
 /// Errors produced while loading or validating content.
@@ -101,31 +161,52 @@ impl ContentRegistry {
         let mut block_ids = HashMap::new();
         for (i, b) in blocks.iter().enumerate() {
             if block_ids.insert(b.id.clone(), BlockId(i as u16)).is_some() {
-                return Err(ContentError::Validation(format!("duplicate block id `{}`", b.id)));
+                return Err(ContentError::Validation(format!(
+                    "duplicate block id `{}`",
+                    b.id
+                )));
             }
         }
         let mut item_ids = HashMap::new();
         for (i, it) in items.iter().enumerate() {
             if item_ids.insert(it.id.clone(), ItemId(i as u16)).is_some() {
-                return Err(ContentError::Validation(format!("duplicate item id `{}`", it.id)));
+                return Err(ContentError::Validation(format!(
+                    "duplicate item id `{}`",
+                    it.id
+                )));
             }
         }
         let mut recipe_ids = HashMap::new();
         for (i, r) in recipes.iter().enumerate() {
-            if recipe_ids.insert(r.id.clone(), RecipeId(i as u16)).is_some() {
-                return Err(ContentError::Validation(format!("duplicate recipe id `{}`", r.id)));
+            if recipe_ids
+                .insert(r.id.clone(), RecipeId(i as u16))
+                .is_some()
+            {
+                return Err(ContentError::Validation(format!(
+                    "duplicate recipe id `{}`",
+                    r.id
+                )));
             }
         }
         let mut machine_ids = HashMap::new();
         for (i, m) in machines.iter().enumerate() {
-            if machine_ids.insert(m.id.clone(), MachineId(i as u16)).is_some() {
-                return Err(ContentError::Validation(format!("duplicate machine id `{}`", m.id)));
+            if machine_ids
+                .insert(m.id.clone(), MachineId(i as u16))
+                .is_some()
+            {
+                return Err(ContentError::Validation(format!(
+                    "duplicate machine id `{}`",
+                    m.id
+                )));
             }
         }
         let mut tech_ids = HashMap::new();
         for (i, t) in tech.iter().enumerate() {
             if tech_ids.insert(t.id.clone(), TechId(i as u16)).is_some() {
-                return Err(ContentError::Validation(format!("duplicate tech id `{}`", t.id)));
+                return Err(ContentError::Validation(format!(
+                    "duplicate tech id `{}`",
+                    t.id
+                )));
             }
         }
 
@@ -255,28 +336,37 @@ impl ContentRegistry {
                 }
             }
             if let Some(m) = &b.machine
-                && self.machine(m).is_none() {
-                    errs.push(format!("block `{}` refers to unknown machine `{m}`", b.id));
-                }
+                && self.machine(m).is_none()
+            {
+                errs.push(format!("block `{}` refers to unknown machine `{m}`", b.id));
+            }
             if b.min_tier == 0 && !b.unbreakable && !b.passable {
-                errs.push(format!("block `{}` is unbreakable but not marked unbreakable", b.id));
+                errs.push(format!(
+                    "block `{}` is unbreakable but not marked unbreakable",
+                    b.id
+                ));
             }
         }
 
         for m in &self.machines {
             for (item, _) in &m.build_cost {
                 if self.item(item).is_none() {
-                    errs.push(format!("machine `{}` build cost uses unknown item `{item}`", m.id));
+                    errs.push(format!(
+                        "machine `{}` build cost uses unknown item `{item}`",
+                        m.id
+                    ));
                 }
             }
             if let Some(t) = &m.tech
-                && self.tech(t).is_none() {
-                    errs.push(format!("machine `{}` requires unknown tech `{t}`", m.id));
-                }
+                && self.tech(t).is_none()
+            {
+                errs.push(format!("machine `{}` requires unknown tech `{t}`", m.id));
+            }
             if let MachineEnergy::Fuel { fuel, .. } = &m.energy
-                && self.item(fuel).is_none() {
-                    errs.push(format!("machine `{}` burns unknown fuel `{fuel}`", m.id));
-                }
+                && self.item(fuel).is_none()
+            {
+                errs.push(format!("machine `{}` burns unknown fuel `{fuel}`", m.id));
+            }
         }
 
         for r in &self.recipes {
@@ -295,9 +385,10 @@ impl ContentRegistry {
                 errs.push(format!("recipe `{}` must have inputs and outputs", r.id));
             }
             if let Some(t) = &r.tech
-                && self.tech(t).is_none() {
-                    errs.push(format!("recipe `{}` requires unknown tech `{t}`", r.id));
-                }
+                && self.tech(t).is_none()
+            {
+                errs.push(format!("recipe `{}` requires unknown tech `{t}`", r.id));
+            }
         }
 
         for t in &self.tech {
@@ -345,7 +436,11 @@ impl ContentRegistry {
             .recipes
             .iter()
             .flat_map(|r| r.outputs.iter().map(|(i, _)| i.as_str()))
-            .chain(self.blocks.iter().flat_map(|b| b.drops.iter().map(|(i, _)| i.as_str())))
+            .chain(
+                self.blocks
+                    .iter()
+                    .flat_map(|b| b.drops.iter().map(|(i, _)| i.as_str())),
+            )
             .chain(SPAWN_ITEMS.iter().copied())
             .collect();
         for it in &self.items {
@@ -363,13 +458,19 @@ impl ContentRegistry {
                     .iter()
                     .any(|t| t.unlocks.iter().any(|u| u == &r.id));
             if !reachable {
-                errs.push(format!("recipe `{}` is not unlocked by any tech node", r.id));
+                errs.push(format!(
+                    "recipe `{}` is not unlocked by any tech node",
+                    r.id
+                ));
             }
         }
 
         for l in &self.layers {
             if self.block(&l.base_block).is_none() {
-                errs.push(format!("layer `{}` uses unknown base block `{}`", l.id, l.base_block));
+                errs.push(format!(
+                    "layer `{}` uses unknown base block `{}`",
+                    l.id, l.base_block
+                ));
             }
             for (b, _) in &l.mix {
                 if self.block(b).is_none() {
@@ -406,10 +507,7 @@ impl ContentRegistry {
             match marks[node] {
                 Mark::Done => return Ok(()),
                 Mark::Active => {
-                    return Err(format!(
-                        "tech tree contains a cycle: {}",
-                        path.join(" -> ")
-                    ));
+                    return Err(format!("tech tree contains a cycle: {}", path.join(" -> ")));
                 }
                 Mark::New => {}
             }
@@ -436,10 +534,7 @@ impl ContentRegistry {
 /// Items every player starts with (used by the "obtainable" validation rule).
 pub const SPAWN_ITEMS: &[&str] = &["steel_pickaxe", "oil_lamp"];
 
-fn read_ron<T: serde::de::DeserializeOwned>(
-    dir: &Path,
-    file: &str,
-) -> Result<T, ContentError> {
+fn read_ron<T: serde::de::DeserializeOwned>(dir: &Path, file: &str) -> Result<T, ContentError> {
     let path = dir.join(file);
     let text = std::fs::read_to_string(&path).map_err(|source| ContentError::Io {
         path: path.display().to_string(),

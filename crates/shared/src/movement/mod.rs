@@ -99,7 +99,11 @@ pub fn overlaps_solid(world: &impl VoxelView, pos: [f32; 3]) -> bool {
         pos[2] + PLAYER_HALF_WIDTH,
     ];
     let lo = world_to_block(bevy::math::Vec3::new(min[0], min[1], min[2]));
-    let hi = world_to_block(bevy::math::Vec3::new(max[0] - 1e-4, max[1] - 1e-4, max[2] - 1e-4));
+    let hi = world_to_block(bevy::math::Vec3::new(
+        max[0] - 1e-4,
+        max[1] - 1e-4,
+        max[2] - 1e-4,
+    ));
     for x in lo.x..=hi.x {
         for y in lo.y..=hi.y {
             for z in lo.z..=hi.z {
@@ -171,7 +175,8 @@ pub fn step(
 
     // Step-up assist: if we are blocked horizontally but a small step is free.
     if before.grounded && body.vel[0].abs() + body.vel[2].abs() > 0.01 {
-        let blocked = (body.pos[0] - before.pos[0]).abs() + (body.pos[2] - before.pos[2]).abs() < 1e-3;
+        let blocked =
+            (body.pos[0] - before.pos[0]).abs() + (body.pos[2] - before.pos[2]).abs() < 1e-3;
         if blocked {
             let mut probe = before;
             probe.pos[1] += consts::STEP_HEIGHT;
@@ -188,7 +193,13 @@ pub fn step(
     *body
 }
 
-fn move_axis(world: &impl VoxelView, body: &mut PlayerBody, axis: usize, delta: f32, vertical: bool) {
+fn move_axis(
+    world: &impl VoxelView,
+    body: &mut PlayerBody,
+    axis: usize,
+    delta: f32,
+    vertical: bool,
+) {
     if delta == 0.0 {
         return;
     }
@@ -229,30 +240,60 @@ mod tests {
     }
 
     fn input(dir: (f32, f32), jump: bool, sprint: bool) -> MoveInput {
-        MoveInput { dir, jump, sprint, ..Default::default() }
+        MoveInput {
+            dir,
+            jump,
+            sprint,
+            ..Default::default()
+        }
     }
 
     #[test]
     fn falls_until_grounded() {
         let world = FlatGround { floor_y: 0 };
-        let mut body = PlayerBody { pos: [0.5, 5.0, 0.5], ..Default::default() };
+        let mut body = PlayerBody {
+            pos: [0.5, 5.0, 0.5],
+            ..Default::default()
+        };
         for _ in 0..200 {
-            step(&world, &mut body, &input((0.0, 0.0), false, false), 1.0 / 30.0);
+            step(
+                &world,
+                &mut body,
+                &input((0.0, 0.0), false, false),
+                1.0 / 30.0,
+            );
         }
         assert!(body.grounded);
-        assert!((body.pos[1] - (1.0 + PLAYER_HALF_HEIGHT)).abs() < 0.05, "y={}", body.pos[1]);
+        assert!(
+            (body.pos[1] - (1.0 + PLAYER_HALF_HEIGHT)).abs() < 0.05,
+            "y={}",
+            body.pos[1]
+        );
     }
 
     #[test]
     fn jump_leaves_ground_and_returns() {
         let world = FlatGround { floor_y: 0 };
-        let mut body = PlayerBody { pos: [0.5, 1.9, 0.5], ..Default::default() };
+        let mut body = PlayerBody {
+            pos: [0.5, 1.9, 0.5],
+            ..Default::default()
+        };
         refresh_grounded(&world, &mut body);
         assert!(body.grounded);
-        step(&world, &mut body, &input((0.0, 0.0), true, false), 1.0 / 30.0);
+        step(
+            &world,
+            &mut body,
+            &input((0.0, 0.0), true, false),
+            1.0 / 30.0,
+        );
         assert!(body.pos[1] > 1.9);
         for _ in 0..120 {
-            step(&world, &mut body, &input((0.0, 0.0), false, false), 1.0 / 30.0);
+            step(
+                &world,
+                &mut body,
+                &input((0.0, 0.0), false, false),
+                1.0 / 30.0,
+            );
         }
         assert!(body.grounded);
     }
@@ -260,13 +301,26 @@ mod tests {
     #[test]
     fn sprint_is_faster_than_walk() {
         let world = FlatGround { floor_y: 0 };
-        let mut walk = PlayerBody { pos: [0.5, 1.9, 0.5], ..Default::default() };
+        let mut walk = PlayerBody {
+            pos: [0.5, 1.9, 0.5],
+            ..Default::default()
+        };
         let mut run = walk;
         refresh_grounded(&world, &mut walk);
         refresh_grounded(&world, &mut run);
         for _ in 0..60 {
-            step(&world, &mut walk, &input((0.0, 1.0), false, false), 1.0 / 30.0);
-            step(&world, &mut run, &input((0.0, 1.0), false, true), 1.0 / 30.0);
+            step(
+                &world,
+                &mut walk,
+                &input((0.0, 1.0), false, false),
+                1.0 / 30.0,
+            );
+            step(
+                &world,
+                &mut run,
+                &input((0.0, 1.0), false, true),
+                1.0 / 30.0,
+            );
         }
         let walked = (walk.pos[2] - 0.5).abs();
         let ran = (run.pos[2] - 0.5).abs();
@@ -282,10 +336,18 @@ mod tests {
             }
         }
         let world = Wall;
-        let mut body = PlayerBody { pos: [0.5, 1.9, 0.5], ..Default::default() };
+        let mut body = PlayerBody {
+            pos: [0.5, 1.9, 0.5],
+            ..Default::default()
+        };
         refresh_grounded(&world, &mut body);
         for _ in 0..120 {
-            step(&world, &mut body, &input((1.0, 0.0), false, false), 1.0 / 30.0);
+            step(
+                &world,
+                &mut body,
+                &input((1.0, 0.0), false, false),
+                1.0 / 30.0,
+            );
         }
         assert!(body.pos[0] < 2.0, "x={}", body.pos[0]);
     }
@@ -293,7 +355,10 @@ mod tests {
     #[test]
     fn movement_is_deterministic() {
         let world = FlatGround { floor_y: 0 };
-        let mut a = PlayerBody { pos: [0.5, 3.0, 0.5], ..Default::default() };
+        let mut a = PlayerBody {
+            pos: [0.5, 3.0, 0.5],
+            ..Default::default()
+        };
         let mut b = a;
         for i in 0..100 {
             let inp = input((0.3, 0.7), i % 17 == 0, i % 5 == 0);

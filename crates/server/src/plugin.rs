@@ -68,18 +68,17 @@ impl Plugin for ServerPlugin {
             register_protocol(app);
         }
 
-        app.add_systems(Startup, log_startup)
-            .add_systems(
-                FixedUpdate,
-                (
-                    crate::sim::pickups::flush_pickup_queue,
-                    crate::sim::mining::tick_mining,
-                    crate::sim::machines::tick_machines,
-                    crate::sim::hazards::tick_hazards,
-                    crate::sim::pickups::collect_pickups,
-                )
-                    .chain(),
-            );
+        app.add_systems(Startup, log_startup).add_systems(
+            FixedUpdate,
+            (
+                crate::sim::pickups::flush_pickup_queue,
+                crate::sim::mining::tick_mining,
+                crate::sim::machines::tick_machines,
+                crate::sim::hazards::tick_hazards,
+                crate::sim::pickups::collect_pickups,
+            )
+                .chain(),
+        );
 
         if self.networking {
             app.add_systems(
@@ -132,16 +131,12 @@ fn log_startup(clock: Res<ServerClock>, world: Res<WorldRes>) {
 }
 
 /// Spawns a player entity with the starting kit.
-pub fn spawn_player(
-    commands: &mut Commands,
-    world: &WorldRes,
-    name: &str,
-) -> Entity {
+pub fn spawn_player(commands: &mut Commands, world: &WorldRes, name: &str) -> Entity {
     let reg = world.0.registry();
     let mut inventory = deepcore_shared::inventory::Inventory::new();
     give_starting_kit(reg, &mut inventory);
     let spawn = spawn_pos();
-    
+
     commands
         .spawn((
             Player {
@@ -156,11 +151,19 @@ pub fn spawn_player(
                 look_pitch: 0.0,
             },
             PlayerBody {
-                pos: [spawn.x as f32 + 0.5, spawn.y as f32 + 0.2, spawn.z as f32 + 0.5],
+                pos: [
+                    spawn.x as f32 + 0.5,
+                    spawn.y as f32 + 0.2,
+                    spawn.z as f32 + 0.5,
+                ],
                 ..Default::default()
             },
             PlayerReplicated {
-                pos: [spawn.x as f32 + 0.5, spawn.y as f32 + 0.2, spawn.z as f32 + 0.5],
+                pos: [
+                    spawn.x as f32 + 0.5,
+                    spawn.y as f32 + 0.2,
+                    spawn.z as f32 + 0.5,
+                ],
                 yaw: 0.0,
                 pitch: 0.0,
                 held: None,

@@ -102,7 +102,8 @@ pub fn handle_start_mining(
         if player.dead {
             continue;
         }
-        let look = crate::sim::mining::look_dir(player_look_yaw(&player), player_look_pitch(&player));
+        let look =
+            crate::sim::mining::look_dir(player_look_yaw(&player), player_look_pitch(&player));
         let held = player.inventory.held().map(|s| s.item);
         let reach = deepcore_shared::blocks::reach_for(world.0.registry(), held);
         let eye = crate::sim::mining::eye_pos(body);
@@ -185,9 +186,10 @@ pub fn handle_stop_mining(
             ClientId::Server => players.iter().map(|(e, _)| e).next(),
         };
         if let Some(e) = entity
-            && let Ok((_, mut p)) = players.get_mut(e) {
-                p.mining = None;
-            }
+            && let Ok((_, mut p)) = players.get_mut(e)
+        {
+            p.mining = None;
+        }
     }
 }
 
@@ -241,7 +243,11 @@ pub fn handle_move_items(
         let reg = world.0.registry();
         let from = msg.message.from;
         let to = msg.message.to;
-        let count = if msg.message.count == 0 { u32::MAX } else { msg.message.count };
+        let count = if msg.message.count == 0 {
+            u32::MAX
+        } else {
+            msg.message.count
+        };
 
         if let Some(pos) = msg.message.machine {
             // Machine must be within reach.
@@ -264,11 +270,12 @@ pub fn handle_move_items(
                     let max = Inventory::max_stack(reg, stack.item);
                     let left = player.inventory.insert(stack.item, stack.count, max);
                     if left > 0
-                        && slot < machine.state.outputs.len() && machine.state.outputs[slot].is_none() {
-                            machine.state.outputs[slot] = Some(deepcore_shared::inventory::ItemStack::new(
-                                stack.item, left,
-                            ));
-                        }
+                        && slot < machine.state.outputs.len()
+                        && machine.state.outputs[slot].is_none()
+                    {
+                        machine.state.outputs[slot] =
+                            Some(deepcore_shared::inventory::ItemStack::new(stack.item, left));
+                    }
                 }
             } else {
                 // Player -> machine input.
@@ -281,11 +288,12 @@ pub fn handle_move_items(
                             placed = true;
                             break;
                         } else if let Some(s) = input
-                            && s.item == stack.item {
-                                s.count += stack.count;
-                                placed = true;
-                                break;
-                            }
+                            && s.item == stack.item
+                        {
+                            s.count += stack.count;
+                            placed = true;
+                            break;
+                        }
                     }
                     if !placed {
                         let max = Inventory::max_stack(reg, stack.item);
@@ -321,7 +329,9 @@ pub fn handle_craft(
         if !tech.recipe_unlocked(reg, recipe) {
             continue;
         }
-        let Some(def) = reg.recipe_def(recipe) else { continue };
+        let Some(def) = reg.recipe_def(recipe) else {
+            continue;
+        };
         if !def.hand {
             continue;
         }
@@ -337,17 +347,19 @@ pub fn handle_craft(
             }
             // Room check before consuming.
             let fits = def.outputs.iter().all(|(id, n)| {
-                reg.item(id).map(|i| {
-                    let max = Inventory::max_stack(reg, i);
-                    let free = player
-                        .inventory
-                        .slots()
-                        .iter()
-                        .filter(|s| s.is_none())
-                        .count() as u32
-                        * max;
-                    free + max >= *n
-                }).unwrap_or(false)
+                reg.item(id)
+                    .map(|i| {
+                        let max = Inventory::max_stack(reg, i);
+                        let free = player
+                            .inventory
+                            .slots()
+                            .iter()
+                            .filter(|s| s.is_none())
+                            .count() as u32
+                            * max;
+                        free + max >= *n
+                    })
+                    .unwrap_or(false)
             });
             if !fits {
                 break;
@@ -385,7 +397,9 @@ pub fn handle_chat(
             ClientId::Server => players.iter().map(|(e, _)| e).next(),
         };
         let Some(entity) = entity else { continue };
-        let Ok((_, player)) = players.get(entity) else { continue };
+        let Ok((_, player)) = players.get(entity) else {
+            continue;
+        };
         let text: String = msg.message.text.chars().take(256).collect();
         out.write(ToClients {
             targets: SendTargets::All,
@@ -414,7 +428,11 @@ pub fn handle_respawn(
             player.dead = false;
             player.vitals.health = 100.0;
             player.vitals.oxygen = 100.0;
-            body.pos = [spawn.x as f32 + 0.5, spawn.y as f32 + 0.1, spawn.z as f32 + 0.5];
+            body.pos = [
+                spawn.x as f32 + 0.5,
+                spawn.y as f32 + 0.1,
+                spawn.z as f32 + 0.5,
+            ];
             body.vel = [0.0; 3];
             player.inventory = Inventory::new();
             let reg_pick = ItemId(0);
@@ -438,12 +456,7 @@ pub fn give_starting_kit(reg: &deepcore_shared::content::ContentRegistry, inv: &
 }
 
 /// Applies drops to an inventory, spawning pickups for overflow.
-pub fn grant_drops(
-    world: &WorldRes,
-    inv: &mut Inventory,
-    drops: &[(ItemId, u32)],
-    at: BlockPos,
-) {
+pub fn grant_drops(world: &WorldRes, inv: &mut Inventory, drops: &[(ItemId, u32)], at: BlockPos) {
     let reg = world.0.registry();
     for (item, count) in drops {
         let max = Inventory::max_stack(reg, *item);

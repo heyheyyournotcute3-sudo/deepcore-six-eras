@@ -6,10 +6,18 @@ license.workspace = true
 
 [dependencies]
 deepcore_shared = { workspace = true }
-bevy = { workspace = true, features = ["bevy_log", "bevy_winit", "bevy_window", "bevy_render", "bevy_core_pipeline", "bevy_pbr", "x11", "wayland"] }
+deepcore_server = { path = "../server" }
+bevy = { workspace = true, features = ["bevy_log", "bevy_winit", "bevy_window", "bevy_render", "bevy_core_pipeline", "bevy_pbr", "bevy_asset", "bevy_scene", "bevy_ui", "bevy_text", "bevy_sprite", "bevy_state", "bevy_image", "bevy_gizmos", "bevy_audio", "vorbis", "x11", "wayland", "multi_threaded", "debug"] }
+bevy_replicon = { workspace = true, features = ["client"] }
+bevy_replicon_renet = { workspace = true, features = ["client"] }
 bevy_egui = { workspace = true }
+serde = { workspace = true }
+postcard = { workspace = true }
+zstd = { workspace = true }
 tracing = { workspace = true }
 anyhow = { workspace = true }
+rand = { workspace = true }
+bytemuck = { version = "1", features = ["derive"] }
 
 [[bin]]
 name = "deepcore-client"

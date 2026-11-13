@@ -116,7 +116,10 @@ impl PowerGrid {
 
     /// Advances every network by `dt` seconds and returns per-network stats.
     pub fn tick(&mut self, dt: f32) -> Vec<NetworkStats> {
-        self.networks.iter_mut().map(|n| solve_network(n, dt)).collect()
+        self.networks
+            .iter_mut()
+            .map(|n| solve_network(n, dt))
+            .collect()
     }
 
     /// Satisfaction of the network containing `node`.
@@ -188,8 +191,14 @@ mod tests {
 
     fn net(supply: f32, demand: f32) -> Network {
         Network {
-            producers: vec![Producer { node: NodeId(0), output: supply }],
-            consumers: vec![Consumer { node: NodeId(1), demand }],
+            producers: vec![Producer {
+                node: NodeId(0),
+                output: supply,
+            }],
+            consumers: vec![Consumer {
+                node: NodeId(1),
+                demand,
+            }],
             ..Default::default()
         }
     }

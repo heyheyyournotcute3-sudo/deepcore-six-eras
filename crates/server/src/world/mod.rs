@@ -83,6 +83,12 @@ impl World {
         self.chunk_mut(pos)
     }
 
+    /// Clones a chunk (generating it if needed) so a local host can hand it to
+    /// the client world without sharing mutable state.
+    pub fn clone_chunk(&mut self, pos: ChunkPos) -> Option<Chunk> {
+        Some(self.chunk_mut(pos).clone())
+    }
+
     /// True if the chunk is already loaded.
     pub fn is_loaded(&self, pos: ChunkPos) -> bool {
         self.chunks.contains_key(&pos)
@@ -93,9 +99,13 @@ impl World {
         self.chunks.len()
     }
 
-    /// Reads a block, generating the chunk if needed. Out-of-world reads
-    /// return bedrock so players cannot leave the map.
+    /// Reads a block, generating the chunk if needed. Horizontal and floor
+    /// out-of-world reads return bedrock so players cannot leave the map;
+    /// above the world is open sky.
     pub fn block(&mut self, pos: BlockPos) -> BlockId {
+        if pos.y >= deepcore_shared::WORLD_HEIGHT {
+            return self.registry.air;
+        }
         if !pos.in_world() {
             return self.registry.bedrock;
         }
@@ -151,16 +161,27 @@ impl World {
             return None;
         }
         let step = 0.02f32;
-        let d = [dir[0] / len * step, dir[1] / len * step, dir[2] / len * step];
+        let d = [
+            dir[0] / len * step,
+            dir[1] / len * step,
+            dir[2] / len * step,
+        ];
         let mut p = origin;
         let mut last: Option<BlockPos> = None;
         let mut travelled = 0.0;
         // The cell the ray starts in is never reported: a player standing in
         // air (or inside water) must not "hit" that cell.
-        let start_cell =
-            BlockPos::new(origin[0].floor() as i32, origin[1].floor() as i32, origin[2].floor() as i32);
+        let start_cell = BlockPos::new(
+            origin[0].floor() as i32,
+            origin[1].floor() as i32,
+            origin[2].floor() as i32,
+        );
         while travelled <= max_distance {
-            let bp = BlockPos::new(p[0].floor() as i32, p[1].floor() as i32, p[2].floor() as i32);
+            let bp = BlockPos::new(
+                p[0].floor() as i32,
+                p[1].floor() as i32,
+                p[2].floor() as i32,
+            );
             if Some(bp) != last && bp != start_cell {
                 let block = self.block(bp);
                 let def = self.registry.block_def(block);
@@ -216,7 +237,11 @@ impl World {
         let origin = chunk.pos().origin();
         for ([x, y, z], block) in chunk.iter_blocks() {
             edits.push(
-                BlockPos::new(origin.x + x as i32, origin.y + y as i32, origin.z + z as i32),
+                BlockPos::new(
+                    origin.x + x as i32,
+                    origin.y + y as i32,
+                    origin.z + z as i32,
+                ),
                 block,
             );
         }
@@ -309,14 +334,29 @@ mod tests {
         assert_ne!(w.block(spawn.offset([0, -1, 0])), air);
         let above = spawn.offset([0, 2, 0]);
         let b = w.block(above);
-        assert_eq!(b, air, "block at {:?} is {:?}", above, w.block_def(b).map(|d| d.id));
+        assert_eq!(
+            b,
+            air,
+            "block at {:?} is {:?}",
+            above,
+            w.block_def(b).map(|d| d.id)
+        );
     }
 
     #[test]
-    fn out_of_world_is_bedrock() {
+    fn out_of_world_is_bedrock_except_open_sky() {
         let mut w = world();
-        assert_eq!(w.block(BlockPos::new(-5, 10, 10)), w.registry.bedrock);
-        assert_eq!(w.block(BlockPos::new(10, 9000, 10)), w.registry.bedrock);
+        let bedrock = w.bedrock();
+        let air = w.air();
+        assert_eq!(w.block(BlockPos::new(-5, 10, 10)), bedrock, "west wall");
+        assert_eq!(w.block(BlockPos::new(5000, 10, 10)), bedrock, "east wall");
+        assert_eq!(
+            w.block(BlockPos::new(10, -5, 10)),
+            bedrock,
+            "below the floor"
+        );
+        // Above the world is open sky, not a lid.
+        assert_eq!(w.block(BlockPos::new(10, 9000, 10)), air);
     }
 
     #[test]
@@ -332,7 +372,11 @@ mod tests {
     fn raycast_hits_ground() {
         let mut w = world();
         let spawn = deepcore_shared::worldgen::spawn_pos();
-        let origin = [spawn.x as f32 + 0.5, spawn.y as f32 + 3.0, spawn.z as f32 + 0.5];
+        let origin = [
+            spawn.x as f32 + 0.5,
+            spawn.y as f32 + 3.0,
+            spawn.z as f32 + 0.5,
+        ];
         let hit = w.raycast(origin, [0.0, -1.0, 0.0], 8.0, false);
         assert!(hit.is_some());
         let (pos, face) = hit.unwrap();
@@ -343,13 +387,11 @@ mod tests {
     }
 
     #[test]
-    fn raycast_upwards_hits_the_unbreakable_ceiling() {
+    fn raycast_upwards_hits_nothing_in_the_open_sky() {
         let mut w = world();
         let spawn = deepcore_shared::worldgen::spawn_pos();
         let origin = [spawn.x as f32, spawn.y as f32 + 2.0, spawn.z as f32];
-        let (pos, _) = w.raycast(origin, [0.0, 1.0, 0.0], 16.0, false).expect("ceiling hit");
-        assert_eq!(pos.y, deepcore_shared::WORLD_HEIGHT - 1);
-        assert_eq!(w.block(pos), w.bedrock());
+        assert!(w.raycast(origin, [0.0, 1.0, 0.0], 16.0, false).is_none());
     }
 
     #[test]
@@ -365,7 +407,11 @@ mod tests {
         let mut w = world();
         let spawn = deepcore_shared::worldgen::spawn_pos();
         // Straight down hits the top face of the block below (Face::Down).
-        let origin = [spawn.x as f32 + 0.5, spawn.y as f32 + 1.5, spawn.z as f32 + 0.5];
+        let origin = [
+            spawn.x as f32 + 0.5,
+            spawn.y as f32 + 1.5,
+            spawn.z as f32 + 0.5,
+        ];
         let (_, face) = w.raycast(origin, [0.0, -1.0, 0.0], 6.0, false).unwrap();
         assert_eq!(face, Face::Down);
     }
